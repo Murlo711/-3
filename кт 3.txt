@@ -1,0 +1,181 @@
+1. Single Responsibility Principle (SRP) - Принцип единственной ответственности:
+
+
+class User:
+    """
+    Этот класс отвечает за хранение данных пользователя.
+    Он НЕ отвечает за сохранение пользователя в базу данных или отправку электронной почты.
+    """
+    def __init__(self, username, email):
+        self.username = username
+        self.email = email
+
+class UserDatabase:
+    """
+    Этот класс отвечает за взаимодействие с базой данных для пользователей.
+    """
+    def save_user(self, user):
+        # Логика сохранения пользователя в базу данных
+        print(f"Saving user {user.username} to database")
+
+class EmailService:
+    """
+    Этот класс отвечает за отправку электронных писем.
+    """
+    def send_welcome_email(self, user):
+        # Логика отправки электронной почты
+        print(f"Sending welcome email to {user.email}")
+
+# Использование:
+user = User("john_doe", "john.doe@example.com")
+db = UserDatabase()
+email_service = EmailService()
+
+db.save_user(user)
+email_service.send_welcome_email(user)
+
+Объяснение SRP:
+
+
+
+User: Отвечает только за хранение данных пользователя.
+
+UserDatabase: Отвечает только за взаимодействие с базой данных для пользователей.
+
+EmailService: Отвечает только за отправку электронных писем.
+
+
+Разделение ответственности позволяет:
+
+
+
+Упростить изменение кода. Если нужно изменить способ сохранения пользователя, нужно менять только UserDatabase.
+
+Повысить переиспользуемость кода. EmailService можно использовать и для других задач.
+
+Улучшить тестируемость кода. Каждый класс можно тестировать отдельно.
+
+
+2. Open/Closed Principle (OCP) - Принцип открытости/закрытости:
+
+
+from abc import ABC, abstractmethod
+
+class PaymentProcessor(ABC):
+    """
+    Абстрактный класс для платежных процессоров.
+    Он открыт для расширения (можно добавлять новые процессоры).
+    Он закрыт для изменения (не нужно менять существующий код при добавлении новых процессоров).
+    """
+    @abstractmethod
+    def process_payment(self, amount):
+        pass
+
+class CreditCardProcessor(PaymentProcessor):
+    """
+    Реализация платежного процессора для кредитных карт.
+    """
+    def process_payment(self, amount):
+        print(f"Processing credit card payment of ${amount}")
+
+class PayPalProcessor(PaymentProcessor):
+    """
+    Реализация платежного процессора для PayPal.
+    """
+    def process_payment(self, amount):
+        print(f"Processing PayPal payment of ${amount}")
+
+class OrderProcessor:
+    """
+    Класс, обрабатывающий заказ.
+    """
+    def __init__(self, payment_processor: PaymentProcessor):
+        self.payment_processor = payment_processor
+
+    def process_order(self, amount):
+        self.payment_processor.process_payment(amount)
+        print("Order processed successfully.")
+
+# Использование:
+credit_card_processor = CreditCardProcessor()
+order_processor = OrderProcessor(credit_card_processor)
+order_processor.process_order(100)
+
+paypal_processor = PayPalProcessor()
+order_processor = OrderProcessor(paypal_processor)
+order_processor.process_order(50)
+
+Объяснение OCP:
+
+
+
+PaymentProcessor (абстрактный класс): Определяет интерфейс для всех платежных процессоров.
+
+CreditCardProcessor и PayPalProcessor:  Конкретные реализации PaymentProcessor.
+
+OrderProcessor:  Обрабатывает заказ, используя любой PaymentProcessor.
+
+
+Благодаря абстракции и наследованию, можно добавить новые типы PaymentProcessor без изменения кода OrderProcessor. Это и есть суть OCP:  сущности должны быть открыты для расширения, но закрыты для модификации.
+
+
+3. Liskov Substitution Principle (LSP) - Принцип подстановки Лисков:
+
+
+class Bird:
+    """
+    Базовый класс для птиц.
+    """
+    def fly(self):
+        print("Bird is flying")
+
+class Eagle(Bird):
+    """
+    Класс для орлов.
+    """
+    def fly(self):
+        print("Eagle is soaring high")
+
+class Penguin(Bird):
+    """
+    Класс для пингвинов.  Нарушает LSP, так как пингвины не летают.
+    """
+    def fly(self):
+        # raise Exception("Penguins can't fly!")  # Вариант 1: выбросить исключение
+        print("Penguins can't fly, but they can swim!") # Вариант 2: сделать что-то другое
+
+def make_bird_fly(bird: Bird):
+    """
+    Функция, заставляющая птицу лететь.
+    """
+    bird.fly()
+
+# Использование:
+eagle = Eagle()
+make_bird_fly(eagle)  # Работает как ожидается
+
+penguin = Penguin()
+make_bird_fly(penguin)  # Работает, но не летает. Нарушение LSP.
+
+Объяснение LSP:
+
+
+LSP гласит, что подтипы должны быть подставляемы вместо своих базовых типов без изменения корректности программы.
+
+
+В этом примере:
+
+
+
+Eagle является подтипом Bird и корректно реализует метод fly. Поэтому подстановка Eagle вместо Bird работает нормально.
+
+Penguin  является подтипом Bird, но не может летать. Поэтому подстановка Penguin вместо Bird в функции make_bird_fly приводит к неожиданному поведению (либо выбрасывается исключение, либо выводится сообщение, что пингвин плавает, а не летает).  Это нарушение LSP.
+
+
+Чтобы исправить нарушение LSP, можно:
+
+
+
+Разделить иерархию: Создать отдельные иерархии для летающих и нелетающих птиц.  Это позволит избежать ситуации, когда подтип не соответствует поведению базового типа.
+
+Избегать пустых реализаций:  Если подтип не поддерживает какое-то поведение базового типа, лучше избегать реализации этого поведения пустым методом или выбросом исключения.  Вместо этого, можно рассмотреть возможность создания отдельных интерфейсов.
